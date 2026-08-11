@@ -65,22 +65,22 @@ rag-app/
 
 ## Using it
 
-1. Upload files and/or paste a URL, then hit "Process documents". Wait for the status box to finish — bigger PDFs take a bit since it's embedding every chunk.
+1. Upload files and/or paste a URL, then hit "Process documents". Wait for the status box to finish - bigger PDFs take a bit since it's embedding every chunk.
 2. Once documents are processed, just type your question in the chat box at the bottom.
 3. Answers show a "Sources" expander below with the file name (and page number for PDFs).
 4. "Clear conversation" wipes chat history only. "Clear source list" just clears the sidebar list for this session — it does not touch the vector store.
 5. Your documents stay embedded across restarts until you delete the `chroma_db` folder manually.
 
-## Known limitations/things I didn't bother with
+## Known limitations/things 
 
-- No de-duplication if you upload the same file twice — it'll just add duplicate chunks
+- No de-duplication if you upload the same file twice - it'll just add duplicate chunks
 - Web scraping via `WebBaseLoader` is pretty basic; it doesn't handle JS-heavy sites
 - Page numbers only show up for PDFs; obviously TXT/web docs don't have pages
 - No auth, no multi-user support, everything is local
-- If you change the embedding model or switch to a different one later, delete the `chroma_db` folder first — Chroma will throw a dimension mismatch error if you mix embeddings from different models in the same collection
+- If you change the embedding model or switch to a different one later, delete the `chroma_db` folder first - Chroma will throw a dimension mismatch error if you mix embeddings from different models in the same collection
 - If you want to start fresh, delete the `chroma_db` and `data` folders and restart the app
-- Error handling is minimal on purpose — if you hit a Gemini rate limit mid-question, you'll see it as a chat message instead of a crash, but that's about as fancy as it gets
+- Error handling is minimal on purpose - if you hit a Gemini rate limit mid-question, you'll see it as a chat message instead of a crash, but that's about as fancy as it gets
 
 ## Notes
 
-Retrieval is set to `k=5` in `rag_pipeline.py` (`TOP_K`) — bump that up if you want more context per answer, at the cost of slower/more expensive calls. Chunk size is 900 with 150 overlap (`CHUNK_SIZE` / `CHUNK_OVERLAP`), tweak those constants if your docs need bigger/smaller chunks.
+Retrieval is set to `k=5` in `rag_pipeline.py` (`TOP_K`) - bump that up if you want more context per answer, at the cost of slower/more expensive calls. Chunk size is 900 with 150 overlap (`CHUNK_SIZE` / `CHUNK_OVERLAP`), tweak those constants if your docs need bigger/smaller chunks.
