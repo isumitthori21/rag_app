@@ -6,22 +6,24 @@ A small Streamlit app that lets you dump some PDFs, TXT files, or a webpage URL 
 
 - Upload multiple PDFs/TXTs, or paste a URL
 - Splits everything with `RecursiveCharacterTextSplitter` and stores embeddings in a local ChromaDB folder (persistent, so it survives restarts)
-- Uses `gemini-1.5-flash` for answering questions, `embedding-001` for embeddings
-- Shows which file/page an answer came from
-- Basic chat history + clear button
+- Uses `gemini-3.6-flash` for answering questions, `gemini-embedding-2-preview` for embeddings
+- Shows which file/page an answer came from, with a sources expander under each answer
+- Chat history is passed back into the prompt, so follow-up questions ("what about that one" etc) actually work
+- Sidebar shows stored chunk count + list of sources added this session
+- Clear chat button (wipes conversation, not the vector store) and a separate clear source-list button
 
-Nothing fancy — no reranking, no hybrid search, no query rewriting. It's a working baseline, not a production RAG system.
 
 ## File structure
 
 ```
 rag-app/
-├── app.py              # streamlit UI
-├── rag_pipeline.py      # loading, chunking, embedding, QA chain
+├── app.py              
+├── rag_pipeline.py     
 ├── requirements.txt
 ├── .env.example
-├── data/                 # uploaded files land here (created automatically)
-└── chroma_db/            # persistent vector store (created automatically)
+├── .gitignore
+├── data/                 
+└── chroma_db/          
 ```
 
 ## Setup (VS Code)
@@ -38,7 +40,6 @@ rag-app/
    - Windows: `venv\Scripts\activate`
    - Mac/Linux: `source venv/bin/activate`
 
-   VS Code will usually prompt you to select this venv as the interpreter — say yes (or do it manually via `Ctrl+Shift+P` -> "Python: Select Interpreter").
 
 3. Install the requirements:
 
@@ -60,24 +61,26 @@ rag-app/
    streamlit run app.py
    ```
 
-   It should open in your browser at `localhost:8501`.
+   It should open in your browser at `localhost:8501`. If the API key isn't set, the app shows a message and stops instead of crashing.
 
 ## Using it
 
-1. Upload files and/or paste a URL, then hit "Process documents". Wait for the success message — bigger PDFs take a bit since it's embedding every chunk.
+1. Upload files and/or paste a URL, then hit "Process documents". Wait for the status box to finish — bigger PDFs take a bit since it's embedding every chunk.
 2. Once documents are processed, just type your question in the chat box at the bottom.
-3. Answers show the source file (and page number for PDFs) below the response.
-4. "Clear chat" wipes conversation history, not the vector store — your documents stay embedded until you delete the `chroma_db` folder manually.
+3. Answers show a "Sources" expander below with the file name (and page number for PDFs).
+4. "Clear conversation" wipes chat history only. "Clear source list" just clears the sidebar list for this session — it does not touch the vector store.
+5. Your documents stay embedded across restarts until you delete the `chroma_db` folder manually.
 
 ## Known limitations/things I didn't bother with
 
 - No de-duplication if you upload the same file twice — it'll just add duplicate chunks
-- Web scraping via `WebBaseLoader` is pretty basic, doesn't handle JS-heavy sites
+- Web scraping via `WebBaseLoader` is pretty basic; it doesn't handle JS-heavy sites
 - Page numbers only show up for PDFs; obviously TXT/web docs don't have pages
 - No auth, no multi-user support, everything is local
-- If you want to start fresh, just delete the `chroma_db` and `data` folders and restart the app
-- Error handling is minimal on purpose — if Gemini's API key is wrong or you hit a rate limit, you'll see the raw error in the terminal instead of a nice message
+- If you change the embedding model or switch to a different one later, delete the `chroma_db` folder first — Chroma will throw a dimension mismatch error if you mix embeddings from different models in the same collection
+- If you want to start fresh, delete the `chroma_db` and `data` folders and restart the app
+- Error handling is minimal on purpose — if you hit a Gemini rate limit mid-question, you'll see it as a chat message instead of a crash, but that's about as fancy as it gets
 
 ## Notes
 
-Retrieval is set to `k=4` in `rag_pipeline.py` — bump that up if you want more context per answer, at the cost of slower/more expensive calls. Chunk size is 1000 with 150 overlap, tweak in `split_docs()` if your docs need bigger/smaller chunks.
+Retrieval is set to `k=5` in `rag_pipeline.py` (`TOP_K`) — bump that up if you want more context per answer, at the cost of slower/more expensive calls. Chunk size is 900 with 150 overlap (`CHUNK_SIZE` / `CHUNK_OVERLAP`), tweak those constants if your docs need bigger/smaller chunks.
