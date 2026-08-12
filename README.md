@@ -1,86 +1,152 @@
 # Multi-Doc RAG Chat
 
-A small Streamlit app that lets you dump some PDFs, TXT files, or a webpage URL into a Chroma vector store and then chat with them using Gemini. Built this as part of a job assignment, sharing it here in case it's useful as a starting point.
+A simple RAG application built with Streamlit, LangChain, Gemini and Chroma.
 
-## What it does
+The app lets you upload PDF/TXT files or provide a webpage URL. The content is processed, split into smaller chunks, and stored in a local Chroma database. You can then ask questions about the uploaded content from the chat interface.
 
-- Upload multiple PDFs/TXTs, or paste a URL
-- Splits everything with `RecursiveCharacterTextSplitter` and stores embeddings in a local ChromaDB folder (persistent, so it survives restarts)
-- Uses `gemini-3.6-flash` for answering questions, `gemini-embedding-2-preview` for embeddings
-- Shows which file/page an answer came from, with a sources expander under each answer
-- Chat history is passed back into the prompt, so follow-up questions ("what about that one" etc) actually work
-- Sidebar shows stored chunk count + list of sources added this session
-- Clear chat button (wipes conversation, not the vector store) and a separate clear source-list button
+## Features
 
+* Upload PDF and TXT files
+* Add a webpage using its URL
+* Text extraction and chunking
+* Gemini embeddings for document search
+* ChromaDB for local vector storage
+* Ask questions about the uploaded documents
+* Shows the source file and page number when available
+* Multiple documents can be processed together
+* Chat history is maintained during the current session
+* Local vector database, so processed data can remain available after restarting the app
 
-## File structure
+## Project Structure
 
-```
-rag-app/
-├── app.py              
-├── rag_pipeline.py     
+```text
+rag_app/
+│
+├── app.py
+├── rag_pipeline.py
 ├── requirements.txt
+├── .env
 ├── .env.example
-├── .gitignore
-├── data/                 
-└── chroma_db/          
+│
+├── data/
+│   └── uploaded files
+│
+└── chroma_db/
+    └── local vector database
 ```
 
-## Setup (VS Code)
+## Requirements
 
-1. Open the project folder in VS Code (`File > Open Folder`).
+* Python 3.10+
+* Gemini API key
+* Internet connection for Gemini API and webpage loading
 
-2. Open a terminal (`` Ctrl+` `` or `Terminal > New Terminal`) and create a virtual env:
+## Setup
 
-   ```bash
-   python -m venv venv
-   ```
+Create and activate a virtual environment:
 
-   Activate it:
-   - Windows: `venv\Scripts\activate`
-   - Mac/Linux: `source venv/bin/activate`
+```bash
+python -m venv .venv
+```
 
+Windows:
 
-3. Install the requirements:
+```bash
+.venv\Scripts\activate
+```
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+Install the required packages:
 
-4. Get a Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+```bash
+pip install -r requirements.txt
+```
 
-5. Create a `.env` file in the root of the project (right-click in VS Code Explorer -> New File -> name it `.env`). Copy the contents of `.env.example` into it and paste your key:
+Create a `.env` file in the project folder:
 
-   ```
-   GOOGLE_API_KEY=your_actual_key
-   ```
+```env
+GOOGLE_API_KEY=your_api_key_here
+```
 
-6. Run the app from the terminal:
+Do not commit the `.env` file to Git.
 
-   ```bash
-   streamlit run app.py
-   ```
+## Run the Application
 
-   It should open in your browser at `localhost:8501`. If the API key isn't set, the app shows a message and stops instead of crashing.
+Start Streamlit with:
 
-## Using it
+```bash
+python -m streamlit run app.py
+```
 
-1. Upload files and/or paste a URL, then hit "Process documents". Wait for the status box to finish - bigger PDFs take a bit since it's embedding every chunk.
-2. Once documents are processed, just type your question in the chat box at the bottom.
-3. Answers show a "Sources" expander below with the file name (and page number for PDFs).
-4. "Clear conversation" wipes chat history only. "Clear source list" just clears the sidebar list for this session — it does not touch the vector store.
-5. Your documents stay embedded across restarts until you delete the `chroma_db` folder manually.
+The application will open in the browser, normally at:
 
-## Known limitations/things 
+```text
+http://localhost:8501
+```
 
-- No de-duplication if you upload the same file twice - it'll just add duplicate chunks
-- Web scraping via `WebBaseLoader` is pretty basic; it doesn't handle JS-heavy sites
-- Page numbers only show up for PDFs; obviously TXT/web docs don't have pages
-- No auth, no multi-user support, everything is local
-- If you change the embedding model or switch to a different one later, delete the `chroma_db` folder first - Chroma will throw a dimension mismatch error if you mix embeddings from different models in the same collection
-- If you want to start fresh, delete the `chroma_db` and `data` folders and restart the app
-- Error handling is minimal on purpose - if you hit a Gemini rate limit mid-question, you'll see it as a chat message instead of a crash, but that's about as fancy as it gets
+## How to Use
+
+1. Open the application.
+2. Upload one or more PDF/TXT files.
+3. You can also enter a webpage URL.
+4. Click **Process documents**.
+5. Wait for the documents to finish processing.
+6. Enter a question in the chat box.
+7. The application retrieves relevant document chunks and sends the retrieved context to Gemini.
+8. The answer is displayed along with the available source information.
+
+## Configuration
+
+The main RAG settings are kept in `rag_pipeline.py`.
+
+The chunk size and overlap can be changed depending on the type of documents being used.
+
+For example:
+
+```python
+chunk_size=1000
+chunk_overlap=150
+```
+
+The number of retrieved chunks can also be adjusted in the retriever settings.
+
+## Vector Database
+
+ChromaDB is stored locally in the `chroma_db` directory.
+
+This means the embeddings do not have to be recreated every time the application starts.
+
+If you want to start with a completely empty database, stop the Streamlit application and delete:
+
+```text
+chroma_db/
+```
+
+The database will be created again when documents are processed.
+
+## Environment Variables
+
+The application uses:
+
+```text
+GOOGLE_API_KEY
+```
+
+Keep the API key in `.env` rather than putting it directly in the Python files.
+
+## Current Limitations
+
+* Scanned/image-only PDFs may not contain extractable text and may require OCR.
+* Web pages that depend heavily on JavaScript may not load correctly with the basic web loader.
+* There is currently no user authentication.
+* The vector database is local to the machine.
+* Uploading the same document multiple times can create duplicate chunks.
+* Changing the embedding model may require creating a fresh Chroma database.
 
 ## Notes
 
-Retrieval is set to `k=5` in `rag_pipeline.py` (`TOP_K`) - bump that up if you want more context per answer, at the cost of slower/more expensive calls. Chunk size is 900 with 150 overlap (`CHUNK_SIZE` / `CHUNK_OVERLAP`), tweak those constants if your docs need bigger/smaller chunks.
+This project is mainly intended as a small RAG demonstration rather than a production-ready document management system.
+
+The main parts of the application are separated into two files:
+
+* `app.py` handles the Streamlit interface.
+* `rag_pipeline.py` handles document loading, splitting, embeddings, retrieval and Gemini responses.
